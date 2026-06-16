@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Fire Heart",
+    "slug": "FireHeart",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/fire_heart.jpg",
+    "scheme": "fireheart",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/fire_heart_circle.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.expomobile87.DateDiary"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/fire_heart.jpg"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/fire_heart_circle.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "imageWidth": 180
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "@react-native-google-signin/google-signin",
+      "expo-background-task"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
