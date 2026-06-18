@@ -4,7 +4,7 @@
     "slug": "TwoHearts",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/fire_heart.jpg",
+    "icon": "./assets/images/two-hearts.png",
     "scheme": "twohearts",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -13,7 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/fire_heart_circle.png"
+        "foregroundImage": "./assets/images/two-hearts.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.expomobile87.DateDiary"
@@ -21,14 +21,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/fire_heart.jpg"
+      "favicon": "./assets/images/two-hearts.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/fire_heart_circle.png",
+          "image": "./assets/images/two-hearts-splash.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "imageWidth": 180
