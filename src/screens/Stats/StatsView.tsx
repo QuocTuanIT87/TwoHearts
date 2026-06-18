@@ -272,6 +272,7 @@ export const StatsView: React.FC = () => {
                 mode="date"
                 onValueChange={handleCustomStartChange}
                 onDismiss={handleCustomStartDismiss}
+                accentColor={COLORS.primary}
               />
             )}
             {showEndPicker && (
@@ -280,6 +281,7 @@ export const StatsView: React.FC = () => {
                 mode="date"
                 onValueChange={handleCustomEndChange}
                 onDismiss={handleCustomEndDismiss}
+                accentColor={COLORS.primary}
               />
             )}
           </View>

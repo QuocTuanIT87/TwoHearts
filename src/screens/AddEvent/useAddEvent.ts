@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Alert } from "react-native";
+import { CustomAlert } from "../../components/CustomAlert";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, router } from "expo-router";
 import { AsyncStorageService, DateHistory, DateType } from "../../services/AsyncStorageService";
 import { GoogleDriveService } from "../../services/GoogleDriveService";
-import { isOlderThan14Days, toLocalISOString } from "../../utils/dateUtils";
+import { toLocalISOString } from "../../utils/dateUtils";
 
 export const useAddEvent = () => {
   const [history, setHistory] = useState<DateHistory[]>([]);
+  const [allHistory, setAllHistory] = useState<DateHistory[]>([]);
+  const [displayLimit, setDisplayLimit] = useState(20);
   const [types, setTypes] = useState<DateType[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -29,19 +31,33 @@ export const useAddEvent = () => {
   const [showMenuModal, setShowMenuModal] = useState(false);
 
   // Load history list and date types
-  const loadData = async () => {
+  const loadData = async (preserveLimit = false) => {
     try {
       setLoading(true);
       const list = await AsyncStorageService.getHistory();
       const loadedTypes = await AsyncStorageService.getTypes();
-      setHistory(list);
+      
+      // Sort by time descending (newest first). Equal times remain in any order.
+      const sorted = list.sort((a, b) => {
+        const timeA = new Date(a.time).getTime();
+        const timeB = new Date(b.time).getTime();
+        return timeB - timeA;
+      });
+
+      setAllHistory(sorted);
       setTypes(loadedTypes);
+
+      const limit = preserveLimit ? displayLimit : 20;
+      if (!preserveLimit) {
+        setDisplayLimit(20);
+      }
+      setHistory(sorted.slice(0, limit));
 
       if (loadedTypes.length > 0 && !selectedType) {
         setSelectedType(loadedTypes[0].name);
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể tải dữ liệu.");
+      CustomAlert.alert("Lỗi", "Không thể tải dữ liệu.");
     } finally {
       setLoading(false);
     }
@@ -49,9 +65,16 @@ export const useAddEvent = () => {
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      loadData(false);
     }, [])
   );
+
+  const handleLoadMore = () => {
+    if (history.length >= allHistory.length) return;
+    const newLimit = displayLimit + 20;
+    setDisplayLimit(newLimit);
+    setHistory(allHistory.slice(0, newLimit));
+  };
 
   // Image selection
   const handleSelectImage = async () => {
@@ -59,7 +82,7 @@ export const useAddEvent = () => {
       // Enforce Google connection first
       const connected = await GoogleDriveService.isLoggedIn();
       if (!connected) {
-        Alert.alert(
+        CustomAlert.alert(
           "Chưa kết nối Google",
           "Hình ảnh cần được lưu trữ trên Google Drive. Vui lòng vào mục Cài đặt kết nối tài khoản Google trước."
         );
@@ -68,9 +91,11 @@ export const useAddEvent = () => {
 
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Quyền truy cập", "Ứng dụng cần quyền thư viện ảnh để thêm ảnh.");
+        CustomAlert.alert("Quyền truy cập", "Ứng dụng cần quyền thư viện ảnh để thêm ảnh.");
         return;
       }
+
+      setLoading(true);
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -86,7 +111,9 @@ export const useAddEvent = () => {
       }
     } catch (error) {
       console.error("Image pick error:", error);
-      Alert.alert("Lỗi chọn ảnh", "Không thể chọn ảnh.");
+      CustomAlert.alert("Lỗi chọn ảnh", "Không thể chọn ảnh.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,11 +128,6 @@ export const useAddEvent = () => {
 
   // Triggered when 3-dots button is pressed on a card
   const handleOpenMenu = (event: DateHistory) => {
-    // Safety check: hide button anyway, but block if user bypasses
-    if (isOlderThan14Days(event.time)) {
-      Alert.alert("Thông báo", "Sự kiện này đã diễn ra hơn 14 ngày, không thể chỉnh sửa hoặc xóa.");
-      return;
-    }
     setMenuEvent(event);
     setShowMenuModal(true);
   };
@@ -133,7 +155,7 @@ export const useAddEvent = () => {
     const id = menuEvent.id;
     const imagesToDelete = menuEvent.imageList || [];
 
-    Alert.alert(
+    CustomAlert.alert(
       "Xác nhận xóa",
       "Bạn có chắc chắn muốn xóa hoàn toàn sự kiện này?",
       [
@@ -158,10 +180,10 @@ export const useAddEvent = () => {
                 }
               }
 
-              await loadData();
+              await loadData(true);
               setMenuEvent(null);
             } catch (error: any) {
-              Alert.alert("Lỗi", error.message || "Không thể xóa sự kiện.");
+              CustomAlert.alert("Lỗi", error.message || "Không thể xóa sự kiện.");
             } finally {
               setLoading(false);
             }
@@ -189,12 +211,12 @@ export const useAddEvent = () => {
   // Save / Update form submit
   const handleSaveEvent = async () => {
     if (!selectedType) {
-      Alert.alert("Lỗi", "Vui lòng chọn loại hẹn hò.");
+      CustomAlert.alert("Lỗi", "Vui lòng chọn loại hẹn hò.");
       return;
     }
 
     if (!note.trim()) {
-      Alert.alert("Yêu cầu", "Vui lòng nhập Ghi chú kỉ niệm trước khi lưu.");
+      CustomAlert.alert("Yêu cầu", "Vui lòng nhập Ghi chú kỉ niệm trước khi lưu.");
       return;
     }
 
@@ -251,7 +273,7 @@ export const useAddEvent = () => {
 
       handleCancelForm();
     } catch (error: any) {
-      Alert.alert("Lỗi khi lưu", error.message || "Lưu thông tin thất bại.");
+      CustomAlert.alert("Lỗi khi lưu", error.message || "Lưu thông tin thất bại.");
     } finally {
       setLoading(false);
     }
@@ -285,7 +307,7 @@ export const useAddEvent = () => {
 
   const handleOpenForm = () => {
     if (types.length === 0) {
-      Alert.alert(
+      CustomAlert.alert(
         "Chưa có loại hình hẹn hò",
         "Bạn chưa có loại hình hẹn hò nào. Vui lòng thêm loại hình hẹn hò trước khi lưu nhật ký.",
         [
@@ -338,5 +360,7 @@ export const useAddEvent = () => {
     handleTimeChange,
     handleTimeDismiss,
     handleOpenForm,
+    handleLoadMore,
+    hasMore: history.length < allHistory.length,
   };
 };

@@ -19,7 +19,7 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ZoomableImage } from "../../components/ZoomableImage";
-import { formatDateTime, isOlderThan14Days } from "../../utils/dateUtils";
+import { formatDateTime } from "../../utils/dateUtils";
 import { COLORS, SHADOWS, SIZES } from "../../utils/theme";
 import { useAddEvent } from "./useAddEvent";
 
@@ -59,6 +59,8 @@ export const AddEventView: React.FC = () => {
     handleDateDismiss,
     handleTimeChange,
     handleTimeDismiss,
+    handleLoadMore,
+    hasMore,
   } = useAddEvent();
 
   const [viewerImages, setViewerImages] = React.useState<string[]>([]);
@@ -67,8 +69,6 @@ export const AddEventView: React.FC = () => {
 
   // Render a single history card
   const renderHistoryItem = ({ item }: { item: (typeof history)[0] }) => {
-    const isLocked = isOlderThan14Days(item.time);
-
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -77,24 +77,17 @@ export const AddEventView: React.FC = () => {
           </View>
           <View style={styles.headerRightContainer}>
             <Text style={styles.cardTime}>{formatDateTime(item.time)}</Text>
-            {isLocked ? (
-              <View style={styles.lockBadge}>
-                <Ionicons name="lock-closed" size={14} color={COLORS.lock} />
-                <Text style={styles.lockText}>Vĩnh viễn</Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                onPress={() => handleOpenMenu(item)}
-                style={styles.threeDotsButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons
-                  name="ellipsis-horizontal"
-                  size={20}
-                  color={COLORS.text}
-                />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onPress={() => handleOpenMenu(item)}
+              style={styles.threeDotsButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={20}
+                color={COLORS.text}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -146,6 +139,12 @@ export const AddEventView: React.FC = () => {
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={COLORS.primary} />
+          {uploadingImage && (
+            <Text style={styles.loadingText}>
+              Upload ảnh chất lượng sẽ diễn ra hơi lâu. Vui lòng chờ trong giây
+              lát...
+            </Text>
+          )}
         </View>
       )}
 
@@ -213,6 +212,7 @@ export const AddEventView: React.FC = () => {
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onValueChange={handleDateChange}
                 onDismiss={handleDateDismiss}
+                accentColor={COLORS.primary}
               />
             )}
 
@@ -224,6 +224,7 @@ export const AddEventView: React.FC = () => {
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onValueChange={handleTimeChange}
                 onDismiss={handleTimeDismiss}
+                accentColor={COLORS.primary}
               />
             )}
 
@@ -381,6 +382,15 @@ export const AddEventView: React.FC = () => {
                   bạn nhé!
                 </Text>
               </View>
+            }
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.2}
+            ListFooterComponent={
+              hasMore ? (
+                <View style={styles.footerLoader}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+              ) : null
             }
           />
 
@@ -695,6 +705,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     ...SHADOWS.medium,
   },
+  footerLoader: {
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   formContainer: {
     padding: SIZES.paddingMd,
     paddingBottom: 140, // Tăng thêm padding bottom lớn để lướt được qua các nút Lưu/Hủy khi bàn phím hiện
@@ -944,5 +959,20 @@ const styles = StyleSheet.create({
   viewerFullImage: {
     width: SCREEN_WIDTH,
     height: "100%",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.text,
+    textAlign: "center",
+    fontWeight: "500",
+    paddingHorizontal: 20,
+    lineHeight: 20,
+  },
+  imageHint: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 8,
+    fontStyle: "italic",
   },
 });

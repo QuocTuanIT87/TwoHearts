@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, SHADOWS, SIZES } from "../../utils/theme";
 import { useOnboarding } from "./useOnboarding";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export const OnboardingView: React.FC = () => {
   const {
@@ -53,6 +54,22 @@ export const OnboardingView: React.FC = () => {
     handleRestoreBackup,
   } = useOnboarding();
 
+  const [showBirthPicker, setShowBirthPicker] = React.useState(false);
+  const [tempBirthDate, setTempBirthDate] = React.useState<Date>(new Date(2002, 0, 1));
+
+  const openBirthPicker = () => {
+    const currentBirthStr = activeStep === 1 ? user1.birthday : user2.birthday;
+    let currentBirth = new Date(2002, 0, 1);
+    if (currentBirthStr) {
+      const parsed = new Date(currentBirthStr);
+      if (!isNaN(parsed.getTime())) {
+        currentBirth = parsed;
+      }
+    }
+    setTempBirthDate(currentBirth);
+    setShowBirthPicker(true);
+  };
+
   const user = activeStep === 1 ? user1 : user2;
   const interestStr = activeStep === 1 ? interestStr1 : interestStr2;
   const setInterestStr = activeStep === 1 ? setInterestStr1 : setInterestStr2;
@@ -75,7 +92,7 @@ export const OnboardingView: React.FC = () => {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Fire Heart ❤️</Text>
+            <Text style={styles.title}>Two Hearts ❤️</Text>
             <Text style={styles.subtitle}>Ghi lại hành trình yêu thương</Text>
           </View>
 
@@ -159,21 +176,91 @@ export const OnboardingView: React.FC = () => {
 
             {/* Birthday input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Ngày sinh (YYYY-MM-DD) *</Text>
-              <TextInput
+              <Text style={styles.label}>Ngày sinh *</Text>
+              <TouchableOpacity
                 style={[
                   styles.input,
                   errors.birthday ? styles.inputError : null,
+                  { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }
                 ]}
-                placeholder="Ví dụ: 1999-12-31"
-                placeholderTextColor={COLORS.textMuted}
-                value={user.birthday}
-                onChangeText={(val) => updateField(activeStep, "birthday", val)}
-              />
+                onPress={openBirthPicker}
+              >
+                <Text style={{ fontSize: 15, color: user.birthday ? COLORS.text : COLORS.textMuted }}>
+                  {user.birthday ? user.birthday : "Chọn ngày sinh từ lịch"}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+              </TouchableOpacity>
               {errors.birthday ? (
                 <Text style={styles.errorText}>{errors.birthday}</Text>
               ) : null}
             </View>
+
+            {showBirthPicker && Platform.OS === "android" && (
+              <DateTimePicker
+                value={tempBirthDate}
+                mode="date"
+                maximumDate={new Date()}
+                accentColor={COLORS.primary}
+                onValueChange={(event, selectedDate) => {
+                  setShowBirthPicker(false);
+                  if (selectedDate) {
+                    const year = selectedDate.getFullYear();
+                    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+                    const day = String(selectedDate.getDate()).padStart(2, "0");
+                    const formatted = `${year}-${month}-${day}`;
+                    updateField(activeStep, "birthday", formatted);
+                  }
+                }}
+              />
+            )}
+
+            {showBirthPicker && Platform.OS === "ios" && (
+              <Modal
+                visible={showBirthPicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowBirthPicker(false)}
+              >
+                <TouchableOpacity
+                  style={styles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setShowBirthPicker(false)}
+                >
+                  <View style={styles.iosPickerContainer}>
+                    <View style={styles.iosPickerHeader}>
+                      <TouchableOpacity onPress={() => setShowBirthPicker(false)}>
+                        <Text style={styles.iosPickerCancelText}>Hủy bỏ</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.iosPickerTitle}>Chọn ngày sinh</Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setShowBirthPicker(false);
+                          const year = tempBirthDate.getFullYear();
+                          const month = String(tempBirthDate.getMonth() + 1).padStart(2, "0");
+                          const day = String(tempBirthDate.getDate()).padStart(2, "0");
+                          const formatted = `${year}-${month}-${day}`;
+                          updateField(activeStep, "birthday", formatted);
+                        }}
+                      >
+                        <Text style={styles.iosPickerConfirmText}>Xác nhận</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={tempBirthDate}
+                      mode="date"
+                      display="spinner"
+                      maximumDate={new Date()}
+                      accentColor={COLORS.primary}
+                      onValueChange={(event, selectedDate) => {
+                        if (selectedDate) {
+                          setTempBirthDate(selectedDate);
+                        }
+                      }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
 
             {/* Height & Weight row */}
             <View style={styles.row}>
@@ -237,7 +324,9 @@ export const OnboardingView: React.FC = () => {
                   placeholder="Ví dụ: 41, 37"
                   placeholderTextColor={COLORS.textMuted}
                   value={user.shoeSize || ""}
-                  onChangeText={(val) => updateField(activeStep, "shoeSize", val)}
+                  onChangeText={(val) =>
+                    updateField(activeStep, "shoeSize", val)
+                  }
                 />
               </View>
               <View
@@ -252,7 +341,9 @@ export const OnboardingView: React.FC = () => {
                   placeholder="Ví dụ: M, L, XL"
                   placeholderTextColor={COLORS.textMuted}
                   value={user.shirtSize || ""}
-                  onChangeText={(val) => updateField(activeStep, "shirtSize", val)}
+                  onChangeText={(val) =>
+                    updateField(activeStep, "shirtSize", val)
+                  }
                 />
               </View>
             </View>
@@ -864,5 +955,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textMuted,
     marginTop: 2,
+  },
+  iosPickerContainer: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: SIZES.radiusLg,
+    borderTopRightRadius: SIZES.radiusLg,
+    paddingBottom: 40,
+  },
+  iosPickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  iosPickerCancelText: {
+    fontSize: 15,
+    color: COLORS.textMuted,
+  },
+  iosPickerTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.text,
+  },
+  iosPickerConfirmText: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: COLORS.primary,
   },
 });

@@ -9,11 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useEditProfile } from "./useEditProfile";
 import { COLORS, SIZES, SHADOWS } from "../../utils/theme";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export const EditProfileView: React.FC = () => {
   const {
@@ -47,6 +49,21 @@ export const EditProfileView: React.FC = () => {
     handleSave,
     handleCancel,
   } = useEditProfile();
+
+  const [showBirthPicker, setShowBirthPicker] = React.useState(false);
+  const [tempBirthDate, setTempBirthDate] = React.useState<Date>(new Date(2002, 0, 1));
+
+  const openBirthPicker = () => {
+    let currentBirth = new Date(2002, 0, 1);
+    if (birthday) {
+      const parsed = new Date(birthday);
+      if (!isNaN(parsed.getTime())) {
+        currentBirth = parsed;
+      }
+    }
+    setTempBirthDate(currentBirth);
+    setShowBirthPicker(true);
+  };
 
   if (loading || !user) {
     return (
@@ -108,16 +125,89 @@ export const EditProfileView: React.FC = () => {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Ngày sinh (YYYY-MM-DD) *</Text>
-              <TextInput
-                style={[styles.input, errors.birthday ? styles.inputError : null]}
-                placeholder="Ví dụ: 1999-12-31"
-                placeholderTextColor={COLORS.textMuted}
-                value={birthday}
-                onChangeText={setBirthday}
-              />
+              <Text style={styles.label}>Ngày sinh *</Text>
+              <TouchableOpacity
+                style={[
+                  styles.input,
+                  errors.birthday ? styles.inputError : null,
+                  { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }
+                ]}
+                onPress={openBirthPicker}
+              >
+                <Text style={{ fontSize: 15, color: birthday ? COLORS.text : COLORS.textMuted }}>
+                  {birthday ? birthday : "Chọn ngày sinh từ lịch"}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+              </TouchableOpacity>
               {errors.birthday ? <Text style={styles.errorText}>{errors.birthday}</Text> : null}
             </View>
+
+            {showBirthPicker && Platform.OS === "android" && (
+              <DateTimePicker
+                value={tempBirthDate}
+                mode="date"
+                maximumDate={new Date()}
+                accentColor={COLORS.primary}
+                onValueChange={(event, selectedDate) => {
+                  setShowBirthPicker(false);
+                  if (selectedDate) {
+                    const year = selectedDate.getFullYear();
+                    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+                    const day = String(selectedDate.getDate()).padStart(2, "0");
+                    const formatted = `${year}-${month}-${day}`;
+                    setBirthday(formatted);
+                  }
+                }}
+              />
+            )}
+
+            {showBirthPicker && Platform.OS === "ios" && (
+              <Modal
+                visible={showBirthPicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowBirthPicker(false)}
+              >
+                <TouchableOpacity
+                  style={styles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setShowBirthPicker(false)}
+                >
+                  <View style={styles.iosPickerContainer}>
+                    <View style={styles.iosPickerHeader}>
+                      <TouchableOpacity onPress={() => setShowBirthPicker(false)}>
+                        <Text style={styles.iosPickerCancelText}>Hủy bỏ</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.iosPickerTitle}>Chọn ngày sinh</Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setShowBirthPicker(false);
+                          const year = tempBirthDate.getFullYear();
+                          const month = String(tempBirthDate.getMonth() + 1).padStart(2, "0");
+                          const day = String(tempBirthDate.getDate()).padStart(2, "0");
+                          const formatted = `${year}-${month}-${day}`;
+                          setBirthday(formatted);
+                        }}
+                      >
+                        <Text style={styles.iosPickerConfirmText}>Xác nhận</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={tempBirthDate}
+                      mode="date"
+                      display="spinner"
+                      maximumDate={new Date()}
+                      accentColor={COLORS.primary}
+                      onValueChange={(event, selectedDate) => {
+                        if (selectedDate) {
+                          setTempBirthDate(selectedDate);
+                        }
+                      }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
@@ -348,5 +438,38 @@ const styles = StyleSheet.create({
     color: COLORS.surface,
     fontWeight: "bold",
     fontSize: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: COLORS.overlay,
+    justifyContent: "flex-end",
+  },
+  iosPickerContainer: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: SIZES.radiusLg,
+    borderTopRightRadius: SIZES.radiusLg,
+    paddingBottom: 40,
+  },
+  iosPickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  iosPickerCancelText: {
+    fontSize: 15,
+    color: COLORS.textMuted,
+  },
+  iosPickerTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.text,
+  },
+  iosPickerConfirmText: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: COLORS.primary,
   },
 });

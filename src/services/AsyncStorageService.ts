@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { encrypt, decrypt } from "../utils/encryption";
-import { isOlderThan14Days } from "../utils/dateUtils";
 
 // Keys used in AsyncStorage
 const KEYS = {
@@ -229,11 +228,6 @@ export const AsyncStorageService = {
 
     const currentItem = history[index];
 
-    // Enforce 14-day rule
-    if (isOlderThan14Days(currentItem.time)) {
-      throw new Error("Sự kiện đã diễn ra hơn 14 ngày, không thể chỉnh sửa.");
-    }
-
     // Merge modifications
     history[index] = {
       ...currentItem,
@@ -250,11 +244,6 @@ export const AsyncStorageService = {
     }
 
     const currentItem = history[index];
-
-    // Enforce 14-day rule
-    if (isOlderThan14Days(currentItem.time)) {
-      throw new Error("Sự kiện đã diễn ra hơn 14 ngày, không thể xóa.");
-    }
 
     const filtered = history.filter((h) => h.id !== id);
     await this.saveHistoryList(filtered);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFocusEffect } from "expo-router";
 import React from "react";
-import { Alert } from "react-native";
+import { CustomAlert } from "../../components/CustomAlert";
 import * as ImagePicker from "expo-image-picker";
 import { AsyncStorageService, DateUser, DateStartTime } from "../../services/AsyncStorageService";
 import { GoogleDriveService } from "../../services/GoogleDriveService";
@@ -18,7 +18,7 @@ export const useProfile = () => {
     try {
       const connected = await GoogleDriveService.isLoggedIn();
       if (!connected) {
-        Alert.alert(
+        CustomAlert.alert(
           "Chưa kết nối Google",
           "Ảnh hồ sơ cần được lưu trên Google Drive. Vui lòng kết nối tài khoản Google trong phần Cài đặt."
         );
@@ -27,7 +27,7 @@ export const useProfile = () => {
 
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Quyền truy cập", "Ứng dụng cần quyền thư viện ảnh để chọn ảnh.");
+        CustomAlert.alert("Quyền truy cập", "Ứng dụng cần quyền thư viện ảnh để chọn ảnh.");
         return;
       }
 
@@ -62,11 +62,11 @@ export const useProfile = () => {
 
         // Reload data
         await loadData();
-        Alert.alert("Thành công", "Đã cập nhật ảnh đại diện.");
+        CustomAlert.alert("Thành công", "Đã cập nhật ảnh đại diện.");
       }
     } catch (error: any) {
       console.error("Update avatar error:", error);
-      Alert.alert("Lỗi", error.message || "Không thể cập nhật ảnh đại diện.");
+      CustomAlert.alert("Lỗi", error.message || "Không thể cập nhật ảnh đại diện.");
     } finally {
       setUpdatingAvatar(false);
     }

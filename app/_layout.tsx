@@ -15,6 +15,7 @@ import { useColorScheme } from "@/components/useColorScheme";
 import { AppProvider, useApp } from "../src/context/AppContext";
 import { BackupService } from "../src/services/BackupService";
 import { GoogleDriveService } from "../src/services/GoogleDriveService";
+import { CustomAlertProvider } from "../src/components/CustomAlert";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -118,6 +119,7 @@ function RootLayoutNav() {
           options={{ gestureEnabled: false }}
         />
       </Stack>
+      <CustomAlertProvider />
     </ThemeProvider>
   );
 }

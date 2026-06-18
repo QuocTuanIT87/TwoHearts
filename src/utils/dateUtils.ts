@@ -1,5 +1,5 @@
 /**
- * Date utility helpers for Fire Heart app.
+ * Date utility helpers for Two Hearts app.
  * Keeps storage dates as ISO 8601 strings and UI displays as DD-MM-YYYY HH:MM.
  */
 

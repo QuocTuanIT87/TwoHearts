@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Alert } from "react-native";
+import { CustomAlert } from "../../components/CustomAlert";
 import { router, useLocalSearchParams } from "expo-router";
 import { AsyncStorageService, DateUser } from "../../services/AsyncStorageService";
 import { useApp } from "../../context/AppContext";
@@ -49,7 +49,7 @@ export const useEditProfile = () => {
           setDislikeStr(targetUser.dislike ? targetUser.dislike.join(", ") : "");
           setHateStr(targetUser.hate ? targetUser.hate.join(", ") : "");
         } else {
-          Alert.alert("Lỗi", "Không tìm thấy thông tin người dùng.");
+          CustomAlert.alert("Lỗi", "Không tìm thấy thông tin người dùng.");
           router.back();
         }
       } catch (error) {
@@ -121,14 +121,14 @@ export const useEditProfile = () => {
 
       await AsyncStorageService.saveUsers(user1, user2);
       await refreshState();
-      Alert.alert(
+      CustomAlert.alert(
         "Thành công",
         "Đã cập nhật thông tin thành công!",
         [{ text: "OK", onPress: () => router.back() }]
       );
     } catch (error) {
       console.error("Save profile failed:", error);
-      Alert.alert("Lỗi", "Không thể lưu chỉnh sửa thông tin.");
+      CustomAlert.alert("Lỗi", "Không thể lưu chỉnh sửa thông tin.");
     } finally {
       setLoading(false);
     }

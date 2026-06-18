@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Alert } from "react-native";
+import { CustomAlert } from "../../components/CustomAlert";
 import { router } from "expo-router";
 import { useApp } from "../../context/AppContext";
 import { AsyncStorageService, DateUser } from "../../services/AsyncStorageService";
@@ -70,7 +70,7 @@ export const useOnboarding = () => {
 
   const handleGoogleLogin = async () => {
     if (!clientId.trim()) {
-      Alert.alert("Yêu cầu", "Vui lòng cấu hình GOOGLE_CLIENT_ID trong file src/services/GoogleDriveService.ts trước khi đăng nhập.");
+      CustomAlert.alert("Yêu cầu", "Vui lòng cấu hình GOOGLE_CLIENT_ID trong file src/services/GoogleDriveService.ts trước khi đăng nhập.");
       return;
     }
     try {
@@ -83,10 +83,10 @@ export const useOnboarding = () => {
       const list = await GoogleDriveService.listBackups();
       setBackups(list);
       
-      Alert.alert("Thành công", "Đã kết nối tài khoản Google thành công!");
+      CustomAlert.alert("Thành công", "Đã kết nối tài khoản Google thành công!");
     } catch (e: any) {
       console.error("Onboarding Google Login error:", e);
-      Alert.alert("Lỗi đăng nhập", e.message || "Không thể kết nối tài khoản Google.");
+      CustomAlert.alert("Lỗi đăng nhập", e.message || "Không thể kết nối tài khoản Google.");
     } finally {
       setLoading(false);
     }
@@ -99,16 +99,16 @@ export const useOnboarding = () => {
       setGoogleToken(null);
       setGoogleUser(null);
       setBackups([]);
-      Alert.alert("Đã ngắt kết nối", "Đã ngắt kết nối tài khoản Google.");
+      CustomAlert.alert("Đã ngắt kết nối", "Đã ngắt kết nối tài khoản Google.");
     } catch (e) {
-      Alert.alert("Lỗi", "Không thể ngắt kết nối.");
+      CustomAlert.alert("Lỗi", "Không thể ngắt kết nối.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRestoreBackup = async (backup: BackupFile) => {
-    Alert.alert(
+    CustomAlert.alert(
       "Xác nhận khôi phục",
       `Bạn có muốn khôi phục dữ liệu từ bản sao lưu ngày ${new Date(backup.createdTime).toLocaleString("vi-VN")}?\nLƯU Ý: Toàn bộ dữ liệu hiện tại trên máy sẽ bị ghi đè.`,
       [
@@ -121,10 +121,10 @@ export const useOnboarding = () => {
               await GoogleDriveService.restoreBackup(backup.id);
               await refreshState();
               setShowGoogleModal(false);
-              Alert.alert("Khôi phục hoàn tất", "Dữ liệu ứng dụng đã được khôi phục thành công.");
+              CustomAlert.alert("Khôi phục hoàn tất", "Dữ liệu ứng dụng đã được khôi phục thành công.");
               router.replace("/(tabs)");
             } catch (e: any) {
-              Alert.alert("Lỗi khôi phục", e.message || "Khôi phục thất bại.");
+              CustomAlert.alert("Lỗi khôi phục", e.message || "Khôi phục thất bại.");
             } finally {
               setLoading(false);
             }

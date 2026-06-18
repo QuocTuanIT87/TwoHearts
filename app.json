@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Fire Heart",
-    "slug": "FireHeart",
+    "name": "Two Hearts",
+    "slug": "TwoHearts",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/fire_heart.jpg",
-    "scheme": "fireheart",
+    "scheme": "twohearts",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
