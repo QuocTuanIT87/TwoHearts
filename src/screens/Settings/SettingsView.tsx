@@ -26,17 +26,11 @@ export const SettingsView: React.FC = () => {
     editingType,
     typeName,
     setTypeName,
-    showBackupListModal,
-    setShowBackupListModal,
-    backups,
     handleOpenAddType,
     handleOpenEditType,
     handleSaveType,
     handleDeleteType,
     handleBackupNow,
-    handleOpenRestoreList,
-    handleRestoreFromList,
-    handlePickAndRestore,
     handleWipeData,
     clientId,
     googleToken,
@@ -133,7 +127,11 @@ export const SettingsView: React.FC = () => {
 
         {/* Sync Settings Card */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Sao lưu & Khôi phục ☁️</Text>
+          <Text style={styles.sectionTitle}>Sao lưu dữ liệu ☁️</Text>
+          <Text style={styles.syncCardDescription}>
+            Tạo và tải bản sao lưu dữ liệu hiện tại dưới dạng tệp tin JSON lên
+            Google Drive.
+          </Text>
 
           <View style={styles.googleAuthContainer}>
             {googleToken ? (
@@ -203,60 +201,6 @@ export const SettingsView: React.FC = () => {
             />
             <Text style={styles.syncBtnText}>Sao lưu dữ liệu lên Drive</Text>
           </TouchableOpacity>
-
-          <View style={styles.restoreRow}>
-            <TouchableOpacity
-              style={[styles.syncBtn, styles.restoreListBtn]}
-              onPress={handleOpenRestoreList}
-            >
-              <Ionicons
-                name="list-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.syncBtnIcon}
-              />
-              <Text style={[styles.syncBtnText, { color: COLORS.primary }]}>
-                Danh sách sao lưu
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.syncBtn, styles.restorePickBtn]}
-              onPress={handlePickAndRestore}
-            >
-              <Ionicons
-                name="document-text-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.syncBtnIcon}
-              />
-              <Text style={[styles.syncBtnText, { color: COLORS.primary }]}>
-                Chọn file .txt
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Danger Zone Reset Section */}
-        <View style={[styles.sectionCard, styles.dangerCard]}>
-          <Text style={[styles.sectionTitle, { color: COLORS.danger }]}>
-            Khu vực nguy hiểm ⚠️
-          </Text>
-          <Text style={styles.dangerDesc}>
-            Các thao tác tại khu vực này sẽ tác động trực tiếp đến tính toàn vẹn
-            của ứng dụng. Hãy cẩn thận khi sử dụng.
-          </Text>
-          <TouchableOpacity style={styles.wipeBtn} onPress={handleWipeData}>
-            <Ionicons
-              name="trash"
-              size={20}
-              color={COLORS.surface}
-              style={styles.syncBtnIcon}
-            />
-            <Text style={styles.wipeBtnText}>
-              Xóa sạch toàn bộ dữ liệu ứng dụng
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -294,65 +238,6 @@ export const SettingsView: React.FC = () => {
                 <Text style={styles.modalSaveBtnText}>Lưu</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Select Backup File List Modal */}
-      <Modal
-        visible={showBackupListModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowBackupListModal(false)}
-      >
-        <View style={styles.modalCentered}>
-          <View style={[styles.modalCard, { maxHeight: "80%" }]}>
-            <Text style={styles.modalTitle}>Bản sao lưu có sẵn 📂</Text>
-
-            <FlatList
-              data={backups}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              ItemSeparatorComponent={() => <View style={styles.divider} />}
-              style={styles.backupList}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.backupRow}
-                  onPress={() => handleRestoreFromList(item)}
-                >
-                  <Ionicons
-                    name="document-attach-outline"
-                    size={24}
-                    color={COLORS.primary}
-                  />
-                  <View style={styles.backupDetails}>
-                    <Text style={styles.backupName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={styles.backupDate}>
-                      {new Date(item.createdTime).toLocaleString("vi-VN")}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <Text
-                  style={[
-                    styles.emptyText,
-                    { textAlign: "center", marginVertical: 32 },
-                  ]}
-                >
-                  Chưa có file sao lưu nào được tạo.
-                </Text>
-              }
-            />
-
-            <TouchableOpacity
-              style={styles.modalCloseListBtn}
-              onPress={() => setShowBackupListModal(false)}
-            >
-              <Text style={styles.modalCloseListBtnText}>Đóng</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>

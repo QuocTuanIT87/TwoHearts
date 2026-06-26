@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/two-hearts.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.expomobile87.DateDiary"
+      "package": "com.expomobile87.DateDiary",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -25,10 +26,11 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-firebase/app",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/two-hearts-splash.png",
+          "image": "./assets/images/two-hearts.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "imageWidth": 180

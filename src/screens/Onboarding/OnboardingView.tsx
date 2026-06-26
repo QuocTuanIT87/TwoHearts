@@ -41,17 +41,7 @@ export const OnboardingView: React.FC = () => {
     handleNext,
     handleBack,
     handleSubmit,
-    // Google Integration
-    clientId,
-    googleToken,
-    googleUser,
-    backups,
     loading,
-    showGoogleModal,
-    setShowGoogleModal,
-    handleGoogleLogin,
-    handleGoogleLogout,
-    handleRestoreBackup,
   } = useOnboarding();
 
   const [showBirthPicker, setShowBirthPicker] = React.useState(false);
@@ -96,23 +86,7 @@ export const OnboardingView: React.FC = () => {
             <Text style={styles.subtitle}>Ghi lại hành trình yêu thương</Text>
           </View>
 
-          {/* Google Restore Banner */}
-          <View style={styles.googleRestoreBanner}>
-            <TouchableOpacity
-              style={styles.googleRestoreBtn}
-              onPress={() => setShowGoogleModal(true)}
-            >
-              <Ionicons
-                name="cloud-download-outline"
-                size={18}
-                color={COLORS.primary}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.googleRestoreBtnText}>
-                Đăng nhập Google / Khôi phục dữ liệu ☁️
-              </Text>
-            </TouchableOpacity>
-          </View>
+
 
           {/* Stepper Progress */}
           <View style={styles.stepperContainer}>
@@ -448,143 +422,12 @@ export const OnboardingView: React.FC = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Google Login & Restore Modal */}
-      <Modal
-        visible={showGoogleModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowGoogleModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          {loading && (
-            <View style={styles.modalLoadingOverlay}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-          )}
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Đồng bộ Google Drive ☁️</Text>
-              <TouchableOpacity
-                onPress={() => setShowGoogleModal(false)}
-                style={styles.modalCloseIcon}
-              >
-                <Ionicons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.modalScrollBody}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              {googleToken ? (
-                // Google Account Info
-                <View style={styles.googleUserCard}>
-                  {googleUser?.avatar ? (
-                    <Image
-                      source={{ uri: googleUser.avatar }}
-                      style={styles.googleAvatar}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.googleAvatar,
-                        styles.googleAvatarPlaceholder,
-                      ]}
-                    >
-                      <Ionicons
-                        name="person"
-                        size={20}
-                        color={COLORS.primary}
-                      />
-                    </View>
-                  )}
-                  <View style={styles.googleUserInfo}>
-                    <Text style={styles.googleUserName}>
-                      {googleUser?.name || "Người dùng Google"}
-                    </Text>
-                    <Text style={styles.googleUserEmail} numberOfLines={1}>
-                      {googleUser?.email || "Đã kết nối Google"}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.logoutMiniBtn}
-                    onPress={handleGoogleLogout}
-                  >
-                    <Text style={styles.logoutMiniBtnText}>Đăng xuất</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                // Setup & Login Card
-                <View style={styles.googleLoginCard}>
-                  <Text style={styles.googleCardTitle}>
-                    Kết nối Google Drive để khôi phục
-                  </Text>
-
-                  <TouchableOpacity
-                    style={styles.loginGoogleBtn}
-                    onPress={handleGoogleLogin}
-                  >
-                    <Ionicons
-                      name="logo-google"
-                      size={18}
-                      color={COLORS.surface}
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text style={styles.loginGoogleBtnText}>
-                      Đăng nhập Google (Gmail)
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Backups List */}
-              {googleToken && (
-                <View style={styles.backupSection}>
-                  <Text style={styles.backupSectionTitle}>
-                    Danh sách bản sao lưu trên Drive
-                  </Text>
-                  {backups.length === 0 ? (
-                    <Text style={styles.emptyBackupText}>
-                      Không tìm thấy bản sao lưu nào trên tài khoản Google Drive
-                      của bạn.
-                    </Text>
-                  ) : (
-                    backups.map((item) => (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={styles.backupItem}
-                        onPress={() => handleRestoreBackup(item)}
-                      >
-                        <Ionicons
-                          name="document-text-outline"
-                          size={24}
-                          color={COLORS.primary}
-                          style={{ marginRight: 12 }}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.backupName} numberOfLines={1}>
-                            {item.name}
-                          </Text>
-                          <Text style={styles.backupDate}>
-                            Ngày tạo:{" "}
-                            {new Date(item.createdTime).toLocaleString("vi-VN")}
-                          </Text>
-                        </View>
-                        <Ionicons
-                          name="chevron-forward"
-                          size={16}
-                          color={COLORS.textMuted}
-                        />
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </View>
-              )}
-            </ScrollView>
-          </View>
+      {/* Loading Overlay */}
+      {loading && (
+        <View style={styles.modalLoadingOverlay}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
-      </Modal>
+      )}
     </SafeAreaView>
   );
 };

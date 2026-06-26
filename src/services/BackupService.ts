@@ -39,7 +39,7 @@ export const BackupService = {
         return false;
       }
 
-      // Perform backup (uploads encrypted tables to Google Drive)
+      // Perform backup directly to Google Drive
       await GoogleDriveService.performBackup();
 
       // Store today as the last backup date

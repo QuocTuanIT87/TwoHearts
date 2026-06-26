@@ -168,14 +168,14 @@ export const useAddEvent = () => {
               setLoading(true);
               await AsyncStorageService.deleteHistoryItem(id);
 
-              // Delete all associated images from Drive
+              // Delete all associated images from Google Drive
               for (const url of imagesToDelete) {
                 const fileId = GoogleDriveService.getFileIdFromUrl(url);
                 if (fileId) {
                   try {
                     await GoogleDriveService.deleteFile(fileId);
                   } catch (err) {
-                    console.warn("Failed to delete image from Drive during deletion:", err);
+                    console.warn("Failed to delete image from Google Drive during deletion:", err);
                   }
                 }
               }
@@ -259,7 +259,7 @@ export const useAddEvent = () => {
 
       await loadData();
       
-      // Delete removed original images from Drive
+      // Delete removed original images from Google Drive
       for (const url of removedImages) {
         const fileId = GoogleDriveService.getFileIdFromUrl(url);
         if (fileId) {

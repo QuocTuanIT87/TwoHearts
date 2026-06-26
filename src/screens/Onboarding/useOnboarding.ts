@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CustomAlert } from "../../components/CustomAlert";
 import { router } from "expo-router";
 import { useApp } from "../../context/AppContext";
 import { AsyncStorageService, DateUser } from "../../services/AsyncStorageService";
-import { GoogleDriveService, BackupFile, GoogleUser } from "../../services/GoogleDriveService";
 
 // Helper to create empty user state
 const createEmptyUser = (id: string, gender: "Nam" | "Nữ"): DateUser => ({
@@ -40,99 +39,7 @@ export const useOnboarding = () => {
   const [user2, setUser2] = useState<DateUser>(createEmptyUser("user_2", "Nữ"));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Google Sign-in & Backup list states
-  const [clientId, setClientId] = useState("");
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
-  const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
-  const [backups, setBackups] = useState<BackupFile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-
-  useEffect(() => {
-    const initGoogle = async () => {
-      try {
-        const id = await GoogleDriveService.getClientId();
-        setClientId(id);
-        const token = await GoogleDriveService.getAccessToken();
-        setGoogleToken(token);
-        if (token) {
-          const info = await GoogleDriveService.getGoogleUserInfo();
-          setGoogleUser(info);
-          const list = await GoogleDriveService.listBackups();
-          setBackups(list);
-        }
-      } catch (e) {
-        console.warn("Init Google in onboarding failed:", e);
-      }
-    };
-    initGoogle();
-  }, []);
-
-  const handleGoogleLogin = async () => {
-    if (!clientId.trim()) {
-      CustomAlert.alert("Yêu cầu", "Vui lòng cấu hình GOOGLE_CLIENT_ID trong file src/services/GoogleDriveService.ts trước khi đăng nhập.");
-      return;
-    }
-    try {
-      setLoading(true);
-      const userInfo = await GoogleDriveService.loginGoogle();
-      setGoogleToken(await GoogleDriveService.getAccessToken());
-      setGoogleUser(userInfo);
-      
-      // Load backups
-      const list = await GoogleDriveService.listBackups();
-      setBackups(list);
-      
-      CustomAlert.alert("Thành công", "Đã kết nối tài khoản Google thành công!");
-    } catch (e: any) {
-      console.error("Onboarding Google Login error:", e);
-      CustomAlert.alert("Lỗi đăng nhập", e.message || "Không thể kết nối tài khoản Google.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogout = async () => {
-    try {
-      setLoading(true);
-      await GoogleDriveService.logoutGoogle();
-      setGoogleToken(null);
-      setGoogleUser(null);
-      setBackups([]);
-      CustomAlert.alert("Đã ngắt kết nối", "Đã ngắt kết nối tài khoản Google.");
-    } catch (e) {
-      CustomAlert.alert("Lỗi", "Không thể ngắt kết nối.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRestoreBackup = async (backup: BackupFile) => {
-    CustomAlert.alert(
-      "Xác nhận khôi phục",
-      `Bạn có muốn khôi phục dữ liệu từ bản sao lưu ngày ${new Date(backup.createdTime).toLocaleString("vi-VN")}?\nLƯU Ý: Toàn bộ dữ liệu hiện tại trên máy sẽ bị ghi đè.`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Khôi phục",
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await GoogleDriveService.restoreBackup(backup.id);
-              await refreshState();
-              setShowGoogleModal(false);
-              CustomAlert.alert("Khôi phục hoàn tất", "Dữ liệu ứng dụng đã được khôi phục thành công.");
-              router.replace("/(tabs)");
-            } catch (e: any) {
-              CustomAlert.alert("Lỗi khôi phục", e.message || "Khôi phục thất bại.");
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
 
   const validateUser = (user: DateUser, step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -203,7 +110,8 @@ export const useOnboarding = () => {
     if (validateUser(parsedUser2, 2)) {
       try {
         setErrors({});
-        // Save both users securely to AsyncStorage (encrypted automatically)
+        setLoading(true);
+        // Save both users securely to Firebase RTDB (through the new service implementation)
         await AsyncStorageService.saveUsers(user1, parsedUser2);
         // Refresh context to load profiles
         await refreshState();
@@ -212,6 +120,8 @@ export const useOnboarding = () => {
       } catch (error) {
         console.error("Save onboarding profiles failed:", error);
         setErrors({ submit: "Đã xảy ra lỗi khi lưu thông tin. Vui lòng thử lại." });
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -253,16 +163,6 @@ export const useOnboarding = () => {
     handleNext,
     handleBack,
     handleSubmit,
-    // Google Integration
-    clientId,
-    googleToken,
-    googleUser,
-    backups,
     loading,
-    showGoogleModal,
-    setShowGoogleModal,
-    handleGoogleLogin,
-    handleGoogleLogout,
-    handleRestoreBackup,
   };
 };

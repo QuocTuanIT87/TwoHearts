@@ -1,5 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { encrypt, decrypt } from "../utils/encryption";
+import { getDatabase, ref, setPersistenceEnabled, get, set, remove } from "@react-native-firebase/database";
+
+const db = getDatabase();
+try {
+  setPersistenceEnabled(db, true);
+} catch (e) {
+  console.warn("Failed to enable database persistence:", e);
+}
 
 // Keys used in AsyncStorage
 const KEYS = {
@@ -100,33 +108,70 @@ export const AsyncStorageService = {
 
   // --- DateUser Operations ---
   async getUsers(): Promise<DateUser[]> {
-    const users = await getEncryptedItem<DateUser[]>(KEYS.USERS);
-    return users || [];
+    try {
+      const snapshot = await get(ref(db, "/users"));
+      const val = snapshot.val();
+      if (!val) return [];
+      if (typeof val === "string") {
+        const decrypted = decrypt(val);
+        if (!decrypted) return [];
+        return JSON.parse(decrypted);
+      }
+      if (Array.isArray(val)) {
+        // Auto-encrypt old data
+        await set(ref(db, "/users"), encrypt(JSON.stringify(val)));
+        return val;
+      }
+      return [];
+    } catch (error) {
+      console.error("Firebase getUsers failed:", error);
+      return [];
+    }
   },
 
   async saveUsers(user1: DateUser, user2: DateUser): Promise<void> {
     // Force specific IDs for consistent 2-user layout
     const formattedUser1 = { ...user1, id: "user_1" };
     const formattedUser2 = { ...user2, id: "user_2" };
-    await setEncryptedItem<DateUser[]>(KEYS.USERS, [formattedUser1, formattedUser2]);
+    const data = [formattedUser1, formattedUser2];
+    await set(ref(db, "/users"), encrypt(JSON.stringify(data)));
   },
 
   // --- DateType Operations ---
   async getTypes(includeArchived = false): Promise<DateType[]> {
-    let types = await getEncryptedItem<DateType[]>(KEYS.TYPES);
-    if (types === null) {
-      // Seed default types
-      await setEncryptedItem<DateType[]>(KEYS.TYPES, DEFAULT_DATE_TYPES);
-      types = DEFAULT_DATE_TYPES;
+    try {
+      const snapshot = await get(ref(db, "/types"));
+      const val = snapshot.val();
+      let types: DateType[] | null = null;
+      if (val !== null) {
+        if (typeof val === "string") {
+          const decrypted = decrypt(val);
+          if (decrypted) {
+            types = JSON.parse(decrypted);
+          }
+        } else if (Array.isArray(val)) {
+          // Auto-encrypt old data
+          types = val;
+          await set(ref(db, "/types"), encrypt(JSON.stringify(val)));
+        }
+      }
+      if (types === null) {
+        // Seed default types
+        await set(ref(db, "/types"), encrypt(JSON.stringify(DEFAULT_DATE_TYPES)));
+        types = DEFAULT_DATE_TYPES;
+      }
+      if (!includeArchived) {
+        return types.filter(t => !t.deleteAt);
+      }
+      return types;
+    } catch (error) {
+      console.error("Firebase getTypes failed:", error);
+      return [];
     }
-    if (!includeArchived) {
-      return types.filter(t => !t.deleteAt);
-    }
-    return types;
   },
 
   async saveTypes(types: DateType[]): Promise<void> {
-    await setEncryptedItem<DateType[]>(KEYS.TYPES, types);
+    await set(ref(db, "/types"), encrypt(JSON.stringify(types)));
   },
 
   async addType(name: string): Promise<DateType> {
@@ -200,12 +245,29 @@ export const AsyncStorageService = {
 
   // --- DateHistory Operations ---
   async getHistory(): Promise<DateHistory[]> {
-    const history = await getEncryptedItem<DateHistory[]>(KEYS.HISTORY);
-    return history || [];
+    try {
+      const snapshot = await get(ref(db, "/history"));
+      const val = snapshot.val();
+      if (!val) return [];
+      if (typeof val === "string") {
+        const decrypted = decrypt(val);
+        if (!decrypted) return [];
+        return JSON.parse(decrypted);
+      }
+      if (Array.isArray(val)) {
+        // Auto-encrypt old data
+        await set(ref(db, "/history"), encrypt(JSON.stringify(val)));
+        return val;
+      }
+      return [];
+    } catch (error) {
+      console.error("Firebase getHistory failed:", error);
+      return [];
+    }
   },
 
   async saveHistoryList(history: DateHistory[]): Promise<void> {
-    await setEncryptedItem<DateHistory[]>(KEYS.HISTORY, history);
+    await set(ref(db, "/history"), encrypt(JSON.stringify(history)));
   },
 
   async addHistoryItem(item: Omit<DateHistory, "id">): Promise<DateHistory> {
@@ -243,49 +305,172 @@ export const AsyncStorageService = {
       throw new Error("Không tìm thấy sự kiện cần xóa.");
     }
 
-    const currentItem = history[index];
-
     const filtered = history.filter((h) => h.id !== id);
     await this.saveHistoryList(filtered);
   },
 
   // --- Clear & Import ---
   async clearAll(): Promise<void> {
-    await AsyncStorage.removeItem(KEYS.HISTORY);
-    await AsyncStorage.removeItem(KEYS.TYPES);
-    await AsyncStorage.removeItem(KEYS.USERS);
+    await remove(ref(db));
+    await AsyncStorage.removeItem("@fireheart_firebase_migration_done");
+    await AsyncStorage.removeItem("@fireheart_firebase_encryption_migration_done");
   },
 
   /**
    * Imports raw database tables, used for restoration.
    */
-  async importRawBackup(data: { history: DateHistory[]; types: DateType[]; users: DateUser[] }): Promise<void> {
-    if (data.users && data.users.length === 2) {
-      await setEncryptedItem<DateUser[]>(KEYS.USERS, data.users);
+  async importRawBackup(data: { history: any; types: any; users: any }): Promise<void> {
+    if (data.users) {
+      const val = typeof data.users === "string" ? data.users : encrypt(JSON.stringify(data.users));
+      await set(ref(db, "/users"), val);
     } else {
-      throw new Error("Dữ liệu sao lưu không chứa đúng 2 người dùng.");
+      throw new Error("Dữ liệu sao lưu không chứa đúng người dùng.");
     }
 
     if (data.types) {
-      await setEncryptedItem<DateType[]>(KEYS.TYPES, data.types);
+      const val = typeof data.types === "string" ? data.types : encrypt(JSON.stringify(data.types));
+      await set(ref(db, "/types"), val);
     }
     if (data.history) {
-      await setEncryptedItem<DateHistory[]>(KEYS.HISTORY, data.history);
+      const val = typeof data.history === "string" ? data.history : encrypt(JSON.stringify(data.history));
+      await set(ref(db, "/history"), val);
     }
   },
 
   /**
    * Exports raw database tables as JSON, used for backup creation.
    */
-  async exportRawBackup(): Promise<{ history: DateHistory[]; types: DateType[]; users: DateUser[] }> {
-    const history = await this.getHistory();
-    const types = await this.getTypes(true);
-    const users = await this.getUsers();
+  async exportRawBackup(): Promise<{ history: string; types: string; users: string }> {
+    const snapshotHistory = await get(ref(db, "/history"));
+    const snapshotTypes = await get(ref(db, "/types"));
+    const snapshotUsers = await get(ref(db, "/users"));
+
+    const historyVal = snapshotHistory.val();
+    const typesVal = snapshotTypes.val();
+    const usersVal = snapshotUsers.val();
+
+    const history = typeof historyVal === "string" ? historyVal : encrypt(JSON.stringify(historyVal || []));
+    const types = typeof typesVal === "string" ? typesVal : encrypt(JSON.stringify(typesVal || []));
+    const users = typeof usersVal === "string" ? usersVal : encrypt(JSON.stringify(usersVal || []));
 
     return {
       history,
       types,
       users,
     };
+  },
+
+  /**
+   * One-time migration script from AsyncStorage to Firebase Realtime Database.
+   */
+  async runFirebaseMigrationIfNeeded(): Promise<void> {
+    try {
+      const migrationDone = await AsyncStorage.getItem("@fireheart_firebase_migration_done");
+      if (migrationDone === "true") {
+        return; // Already migrated
+      }
+
+      console.log("[Migration] Starting Firebase migration...");
+
+      // 1. Get old local users
+      const rawUsers = await AsyncStorage.getItem(KEYS.USERS);
+      let users: DateUser[] = [];
+      if (rawUsers) {
+        const decrypted = decrypt(rawUsers);
+        if (decrypted) users = JSON.parse(decrypted);
+      }
+
+      // 2. Get old local types
+      const rawTypes = await AsyncStorage.getItem(KEYS.TYPES);
+      let types: DateType[] = [];
+      if (rawTypes) {
+        const decrypted = decrypt(rawTypes);
+        if (decrypted) types = JSON.parse(decrypted);
+      }
+
+      // 3. Get old local history
+      const rawHistory = await AsyncStorage.getItem(KEYS.HISTORY);
+      let history: DateHistory[] = [];
+      if (rawHistory) {
+        const decrypted = decrypt(rawHistory);
+        if (decrypted) history = JSON.parse(decrypted);
+      }
+
+      // If there is no local data, just set flag and exit
+      if (users.length === 0 && types.length === 0 && history.length === 0) {
+        await AsyncStorage.setItem("@fireheart_firebase_migration_done", "true");
+        console.log("[Migration] No local data to migrate. Finished.");
+        return;
+      }
+
+      console.log(`[Migration] Found local data: ${users.length} users, ${types.length} types, ${history.length} history items.`);
+
+      // 4. Write migrated data directly to Firebase Realtime Database (encrypted)
+      console.log("[Migration] Saving migrated data to Firebase Realtime Database...");
+      if (users.length > 0) {
+        await set(ref(db, "/users"), encrypt(JSON.stringify(users)));
+      }
+      if (types.length > 0) {
+        await set(ref(db, "/types"), encrypt(JSON.stringify(types)));
+      }
+      if (history.length > 0) {
+        await set(ref(db, "/history"), encrypt(JSON.stringify(history)));
+      }
+
+      // Mark as completed
+      await AsyncStorage.setItem("@fireheart_firebase_migration_done", "true");
+      console.log("[Migration] Firebase migration completed successfully!");
+    } catch (error) {
+      console.error("[Migration] Firebase migration failed:", error);
+    }
+  },
+
+  /**
+   * Scans existing Firebase Realtime Database data and encrypts it if it's plain text (array/object).
+   */
+  async encryptFirebaseDataIfNeeded(): Promise<void> {
+    try {
+      const encryptionDone = await AsyncStorage.getItem("@fireheart_firebase_encryption_migration_done");
+      if (encryptionDone === "true") {
+        return; // Already checked and migrated
+      }
+
+      console.log("[Encryption Migration] Checking if Firebase Realtime Database needs encryption...");
+
+      let changed = false;
+
+      // 1. Check users
+      const snapshotUsers = await get(ref(db, "/users"));
+      const usersVal = snapshotUsers.val();
+      if (usersVal && typeof usersVal !== "string" && Array.isArray(usersVal)) {
+        console.log("[Encryption Migration] Encrypting /users...");
+        await set(ref(db, "/users"), encrypt(JSON.stringify(usersVal)));
+        changed = true;
+      }
+
+      // 2. Check types
+      const snapshotTypes = await get(ref(db, "/types"));
+      const typesVal = snapshotTypes.val();
+      if (typesVal && typeof typesVal !== "string" && Array.isArray(typesVal)) {
+        console.log("[Encryption Migration] Encrypting /types...");
+        await set(ref(db, "/types"), encrypt(JSON.stringify(typesVal)));
+        changed = true;
+      }
+
+      // 3. Check history
+      const snapshotHistory = await get(ref(db, "/history"));
+      const historyVal = snapshotHistory.val();
+      if (historyVal && typeof historyVal !== "string" && Array.isArray(historyVal)) {
+        console.log("[Encryption Migration] Encrypting /history...");
+        await set(ref(db, "/history"), encrypt(JSON.stringify(historyVal)));
+        changed = true;
+      }
+
+      // Mark as checked to prevent checking on every startup
+      await AsyncStorage.setItem("@fireheart_firebase_encryption_migration_done", "true");
+      console.log("[Encryption Migration] Firebase Realtime Database encryption check completed. Changed: " + changed);
+    } catch (error) {
+      console.error("[Encryption Migration] Failed to encrypt existing Firebase data:", error);
+    }
   },
 };

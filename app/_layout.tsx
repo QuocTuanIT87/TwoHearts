@@ -1,3 +1,4 @@
+(globalThis as any).RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 import { useFonts } from "expo-font";
 import {
   DarkTheme,
@@ -14,7 +15,6 @@ import "react-native-reanimated";
 import { useColorScheme } from "@/components/useColorScheme";
 import { AppProvider, useApp } from "../src/context/AppContext";
 import { BackupService } from "../src/services/BackupService";
-import { GoogleDriveService } from "../src/services/GoogleDriveService";
 import { CustomAlertProvider } from "../src/components/CustomAlert";
 
 export { ErrorBoundary } from "expo-router";
@@ -77,12 +77,7 @@ function RootLayoutNav() {
     if (!isLoading && !startupChecked) {
       const checkStatus = async () => {
         if (users.length < 2) {
-          const isGoogleConnected = await GoogleDriveService.isLoggedIn();
-          if (!isGoogleConnected) {
-            router.replace("/google-connect");
-          } else {
-            router.replace("/onboarding");
-          }
+          router.replace("/onboarding");
         } else {
           setIsReady(true);
         }
@@ -114,10 +109,6 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-        <Stack.Screen
-          name="google-connect"
-          options={{ gestureEnabled: false }}
-        />
       </Stack>
       <CustomAlertProvider />
     </ThemeProvider>

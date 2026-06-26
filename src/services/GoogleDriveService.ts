@@ -243,29 +243,22 @@ export const GoogleDriveService = {
     const token = await this.getAccessToken();
     if (!token) throw new Error("Chưa kết nối tài khoản Google Drive. Vui lòng đăng nhập trong mục Cài đặt trước.");
 
-    // 1. Prepare backup payload
+    // 1. Prepare backup payload (raw database tables JSON)
     const backupData = await AsyncStorageService.exportRawBackup();
-    const rawJson = JSON.stringify({
-      backupDate: new Date().toISOString(),
-      version: "1.0",
-      tables: backupData,
-    });
+    const rawJson = JSON.stringify(backupData, null, 2);
 
-    // 2. Encrypt using key "MayTrangSatsBoy"
-    const encryptedContent = encrypt(rawJson);
-
-    // 3. Save backup file
+    // 2. Save backup file with .json extension
     const dateFormatted = new Date().toISOString().replace(/:/g, "-").split(".")[0];
-    const fileName = `backup_${dateFormatted}.txt`;
+    const fileName = `backup_${dateFormatted}.json`;
 
-    // 4. Get or create parent folder "DateDiaryBackup" under "DateDiaryData"
+    // 3. Get or create parent folder "DateDiaryBackup" under "DateDiaryData"
     const rootFolderId = await this.getOrCreateDriveFolder("DateDiaryData", token);
     const parentFolderId = await this.getOrCreateDriveFolder("DateDiaryBackup", token, rootFolderId);
 
-    // 5. Upload backup file (simple media upload)
-    await this.uploadTextToDrive(encryptedContent, fileName, parentFolderId, token);
+    // 4. Upload backup file
+    await this.uploadTextToDrive(rawJson, fileName, parentFolderId, token);
 
-    // 6. Enforce cloud retention
+    // 5. Enforce cloud retention
     await this.pruneBackups();
     return fileName;
   },
@@ -277,7 +270,7 @@ export const GoogleDriveService = {
 
     const rootFolderId = await this.getOrCreateDriveFolder("DateDiaryData", token);
     const parentFolderId = await this.getOrCreateDriveFolder("DateDiaryBackup", token, rootFolderId);
-    const query = `name contains 'backup_' and name contains '.txt' and '${parentFolderId}' in parents and trashed = false`;
+    const query = `name contains 'backup_' and name contains '.json' and '${parentFolderId}' in parents and trashed = false`;
     const response = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
         query

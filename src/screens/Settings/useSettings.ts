@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { CustomAlert } from "../../components/CustomAlert";
 import { router } from "expo-router";
-import * as DocumentPicker from "expo-document-picker";
 import { useApp } from "../../context/AppContext";
 import { AsyncStorageService, DateType } from "../../services/AsyncStorageService";
-import { GoogleDriveService, BackupFile, GoogleUser } from "../../services/GoogleDriveService";
+import { GoogleDriveService, GoogleUser } from "../../services/GoogleDriveService";
 
 export const useSettings = () => {
   const { refreshState } = useApp();
@@ -20,10 +19,6 @@ export const useSettings = () => {
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [editingType, setEditingType] = useState<DateType | null>(null);
   const [typeName, setTypeName] = useState("");
-
-  // Backup list modal state
-  const [showBackupListModal, setShowBackupListModal] = useState(false);
-  const [backups, setBackups] = useState<BackupFile[]>([]);
 
   // Load category list and Google settings
   const loadData = async () => {
@@ -144,12 +139,12 @@ export const useSettings = () => {
     );
   };
 
-  // Perform Manual Backup
+  // Perform Manual Backup to Google Drive
   const handleBackupNow = async () => {
     try {
       setLoading(true);
       const fileName = await GoogleDriveService.performBackup();
-      CustomAlert.alert("Sao lưu thành công", `Đã lưu bản sao lưu thành file: \n${fileName}`);
+      CustomAlert.alert("Sao lưu thành công", `Đã lưu bản sao lưu thành file JSON trên Google Drive: \n${fileName}`);
     } catch (e: any) {
       CustomAlert.alert("Lỗi sao lưu", e.message || "Không thể thực hiện sao lưu.");
     } finally {
@@ -157,93 +152,11 @@ export const useSettings = () => {
     }
   };
 
-  // List backups to show in modal
-  const handleOpenRestoreList = async () => {
-    try {
-      setLoading(true);
-      const list = await GoogleDriveService.listBackups();
-      setBackups(list);
-      setShowBackupListModal(true);
-    } catch (e: any) {
-      CustomAlert.alert("Lỗi danh sách", e.message || "Không thể lấy danh sách bản sao lưu.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Restore from a listed file
-  const handleRestoreFromList = async (backup: BackupFile) => {
-    CustomAlert.alert(
-      "Xác nhận khôi phục",
-      `Bạn có muốn khôi phục dữ liệu từ bản sao lưu ngày ${new Date(backup.createdTime).toLocaleString("vi-VN")}?\nLƯU Ý: Dữ liệu hiện tại trên app sẽ bị thay thế hoàn toàn.`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Khôi phục",
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await GoogleDriveService.restoreBackup(backup.id);
-              await refreshState();
-              setShowBackupListModal(false);
-              CustomAlert.alert("Khôi phục hoàn tất", "Dữ liệu ứng dụng đã được khôi phục thành công.");
-              router.replace("/(tabs)");
-            } catch (e: any) {
-              CustomAlert.alert("Lỗi khôi phục", e.message || "Khôi phục thất bại.");
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  // Pick a local file using Document Picker and Restore
-  const handlePickAndRestore = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "text/plain",
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const pickedFileUri = result.assets[0].uri;
-        
-        CustomAlert.alert(
-          "Xác nhận khôi phục",
-          "Bạn có chắc chắn muốn nhập dữ liệu từ file .txt này? Toàn bộ dữ liệu hiện tại sẽ bị ghi đè.",
-          [
-            { text: "Hủy", style: "cancel" },
-            {
-              text: "Khôi phục",
-              onPress: async () => {
-                try {
-                  setLoading(true);
-                  await GoogleDriveService.restoreBackup(pickedFileUri);
-                  await refreshState();
-                  CustomAlert.alert("Khôi phục hoàn tất", "Dữ liệu ứng dụng đã được khôi phục thành công.");
-                  router.replace("/(tabs)");
-                } catch (e: any) {
-                  CustomAlert.alert("Lỗi khôi phục", e.message || "Nhập file thất bại. Vui lòng kiểm tra lại cấu trúc file và mật khẩu mã hóa.");
-                } finally {
-                  setLoading(false);
-                }
-              },
-            },
-          ]
-        );
-      }
-    } catch (e) {
-      console.error("Document picking error:", e);
-    }
-  };
-
   // Factory reset (wipe all data)
   const handleWipeData = () => {
     CustomAlert.alert(
       "CẢNH BÁO NGUY HIỂM ⚠️",
-      "Hành động này sẽ XÓA SẠCH HOÀN TOÀN tất cả lịch sử hẹn hò, danh sách loại hoạt động, và cấu hình người dùng trên máy này!\nDữ liệu đã sao lưu trên Drive sẽ không bị ảnh hưởng. Bạn có chắc muốn tiếp tục?",
+      "Hành động này sẽ XÓA SẠCH HOÀN TOÀN tất cả lịch sử hẹn hò, danh sách loại hoạt động, và cấu hình người dùng trên máy và trên Firebase Realtime Database!\nDữ liệu đã sao lưu trên Drive sẽ không bị ảnh hưởng. Bạn có chắc muốn tiếp tục?",
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -276,17 +189,11 @@ export const useSettings = () => {
     editingType,
     typeName,
     setTypeName,
-    showBackupListModal,
-    setShowBackupListModal,
-    backups,
     handleOpenAddType,
     handleOpenEditType,
     handleSaveType,
     handleDeleteType,
     handleBackupNow,
-    handleOpenRestoreList,
-    handleRestoreFromList,
-    handlePickAndRestore,
     handleWipeData,
     clientId,
     googleToken,

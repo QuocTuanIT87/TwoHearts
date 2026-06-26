@@ -42,10 +42,10 @@ export const useProfile = () => {
         setUpdatingAvatar(true);
         const localUri = result.assets[0].uri;
 
-        // Upload new avatar (which deletes/overwrites the old one)
+        // Upload new avatar to Google Drive
         const driveUrl = await GoogleDriveService.uploadAvatar(localUri, gender);
 
-        // Update local database
+        // Update database
         const userList = await AsyncStorageService.getUsers();
         const boyUser = userList.find((u) => u.gender === "Nam");
         const girlUser = userList.find((u) => u.gender === "Nữ");

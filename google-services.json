@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "265732130824",
+    "firebase_url": "https://two-hearts-9bec8-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "two-hearts-9bec8",
+    "storage_bucket": "two-hearts-9bec8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:265732130824:android:a2529be9292f0bd338e9bd",
+        "android_client_info": {
+          "package_name": "com.expomobile87.DateDiary"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDL95lOXmrfhvA6_98qnHZiR-TKCnWhGSE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
